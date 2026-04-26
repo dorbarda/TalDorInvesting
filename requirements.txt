@@ -1,0 +1,2 @@
+yfinance==0.2.54
+supabase==2.9.1
