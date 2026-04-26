@@ -12,57 +12,80 @@ SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
 
 
-def next_earnings_date(symbol: str) -> str | None:
-    """Return the nearest upcoming earnings date for symbol, or None."""
+def _split_earnings_dates(symbol: str) -> tuple[list[date], list[date]]:
+    """
+    Return (future_dates, past_dates) for the given symbol.
+
+    Primary source: t.earnings_dates — a DataFrame whose DatetimeIndex
+    contains both upcoming (Reported EPS is NaN) and historical entries.
+    Fallback: t.calendar — dict with an 'Earnings Date' key that holds
+    the upcoming earnings window only (no historical data).
+    """
+    t = yf.Ticker(symbol)
+    today = date.today()
+    future: list[date] = []
+    past: list[date] = []
+
+    # Primary: earnings_dates covers history + upcoming
     try:
-        t = yf.Ticker(symbol)
+        df = t.earnings_dates
+        if df is not None and not df.empty:
+            for ts in df.index:
+                d = ts.date() if hasattr(ts, "date") else None
+                if d is None:
+                    continue
+                if d >= today:
+                    future.append(d)
+                else:
+                    past.append(d)
+            if future or past:
+                return future, past
+    except Exception:
+        pass
+
+    # Fallback: calendar (upcoming window only — no past dates)
+    try:
         cal = t.calendar
         if not cal:
-            return None
+            return [], []
 
-        # yfinance may return a dict or DataFrame depending on version
-        if hasattr(cal, "to_dict"):
-            cal = cal.to_dict()
-
-        raw = cal.get("Earnings Date") or cal.get("earningsDate", [])
-        if not raw:
-            return None
+        if hasattr(cal, "index"):  # DataFrame (older yfinance)
+            try:
+                raw = cal.loc["Earnings Date"].dropna().tolist()
+            except Exception:
+                raw = []
+        else:  # dict (yfinance 0.2.x)
+            raw = cal.get("Earnings Date") or cal.get("earningsDate", [])
 
         if not isinstance(raw, list):
-            raw = [raw]
+            raw = [raw] if raw else []
 
-        today = date.today()
-        future = [d for d in raw if hasattr(d, "date") and d.date() >= today]
-        if not future:
-            return None
-        return min(future).strftime("%Y-%m-%d")
+        for item in raw:
+            d = item.date() if hasattr(item, "date") else None
+            if d is None:
+                continue
+            if d >= today:
+                future.append(d)
+            else:
+                past.append(d)
+    except Exception:
+        pass
+
+    return future, past
+
+
+def next_earnings_date(symbol: str) -> str | None:
+    try:
+        future, _ = _split_earnings_dates(symbol)
+        return min(future).strftime("%Y-%m-%d") if future else None
     except Exception:
         return None
 
 
 def last_earnings_date(symbol: str) -> str | None:
-    """Return the most recent past earnings date for symbol, or None."""
     try:
-        t = yf.Ticker(symbol)
-        cal = t.calendar
-        if not cal:
-            return None
-
-        if hasattr(cal, "to_dict"):
-            cal = cal.to_dict()
-
-        raw = cal.get("Earnings Date") or cal.get("earningsDate", [])
-        if not raw:
-            return None
-
-        if not isinstance(raw, list):
-            raw = [raw]
-
-        today = date.today()
-        past = [d for d in raw if hasattr(d, "date") and d.date() < today]
-        if not past:
-            return None
-        return max(past).strftime("%Y-%m-%d")
+        _, past = _split_earnings_dates(symbol)
+        return max(past).strftime("%Y-%m-%d") if past else None
     except Exception:
         return None
 
