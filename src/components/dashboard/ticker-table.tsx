@@ -11,14 +11,16 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase/client";
 import { type Ticker } from "@/types/database";
 import { StatusBadge } from "@/components/ticker/status-badge";
 import { ScoreBadge } from "@/components/ticker/score-badge";
 import { TickerFilters } from "@/components/dashboard/ticker-filters";
 import { NewTickerDialog } from "@/components/dashboard/new-ticker-dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -29,65 +31,82 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
     : <ArrowDown className="ml-1 h-3 w-3" />;
 }
 
-const columns: ColumnDef<Ticker>[] = [
-  {
-    accessorKey: "symbol",
-    header: "Symbol",
-    cell: ({ row }) => (
-      <span className="font-mono font-semibold text-sm">{row.original.symbol}</span>
-    ),
-  },
-  {
-    accessorKey: "company_name",
-    header: "Company",
-    cell: ({ row }) => (
-      <span className="text-sm max-w-[200px] truncate block">{row.original.company_name}</span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
-  },
-  {
-    accessorKey: "confidence_score",
-    header: "Confidence",
-    cell: ({ row }) => <ScoreBadge score={row.original.confidence_score} />,
-  },
-  {
-    accessorKey: "price_score",
-    header: "Price",
-    cell: ({ row }) => <ScoreBadge score={row.original.price_score} />,
-  },
-  {
-    accessorKey: "five_pillars_score",
-    header: "5 Pillars",
-    cell: ({ row }) => <ScoreBadge score={row.original.five_pillars_score} />,
-  },
-  {
-    accessorKey: "last_earnings_date",
-    header: "Last Earnings",
-    cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground tabular-nums">{formatDate(row.original.last_earnings_date)}</span>
-    ),
-  },
-  {
-    accessorKey: "next_earnings_date",
-    header: "Next Earnings",
-    cell: ({ row }) => {
-      const date = row.original.next_earnings_date;
-      const isUpcoming = date && new Date(date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      return (
-        <span className={cn("text-sm tabular-nums", isUpcoming ? "text-amber-600 font-medium" : "text-muted-foreground")}>
-          {formatDate(date)}
-        </span>
-      );
-    },
-  },
-];
-
 interface TickerTableProps {
   tickers: Ticker[];
+}
+
+function buildColumns(onDelete: (t: Ticker) => void): ColumnDef<Ticker>[] {
+  return [
+    {
+      accessorKey: "symbol",
+      header: "Symbol",
+      cell: ({ row }) => (
+        <span className="font-mono font-semibold text-sm">{row.original.symbol}</span>
+      ),
+    },
+    {
+      accessorKey: "company_name",
+      header: "Company",
+      cell: ({ row }) => (
+        <span className="text-sm max-w-[200px] truncate block">{row.original.company_name}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
+      accessorKey: "confidence_score",
+      header: "Confidence",
+      cell: ({ row }) => <ScoreBadge score={row.original.confidence_score} />,
+    },
+    {
+      accessorKey: "price_score",
+      header: "Price",
+      cell: ({ row }) => <ScoreBadge score={row.original.price_score} />,
+    },
+    {
+      accessorKey: "five_pillars_score",
+      header: "5 Pillars",
+      cell: ({ row }) => <ScoreBadge score={row.original.five_pillars_score} />,
+    },
+    {
+      accessorKey: "last_earnings_date",
+      header: "Last Earnings",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground tabular-nums">{formatDate(row.original.last_earnings_date)}</span>
+      ),
+    },
+    {
+      accessorKey: "next_earnings_date",
+      header: "Next Earnings",
+      cell: ({ row }) => {
+        const date = row.original.next_earnings_date;
+        const isUpcoming = date && new Date(date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        return (
+          <span className={cn("text-sm tabular-nums", isUpcoming ? "text-amber-600 font-medium" : "text-muted-foreground")}>
+            {formatDate(date)}
+          </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(row.original); }}
+            className="p-1.5 rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
+            aria-label="Delete ticker"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
 }
 
 export function TickerTable({ tickers }: TickerTableProps) {
@@ -96,6 +115,22 @@ export function TickerTable({ tickers }: TickerTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<Ticker | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    const { error } = await supabase.from("tickers").delete().eq("id", confirmDelete.id);
+    setDeleting(false);
+    setConfirmDelete(null);
+    if (error) {
+      toast.error("Failed to delete: " + error.message);
+    } else {
+      toast.success(`${confirmDelete.symbol} deleted`);
+      router.refresh();
+    }
+  }
 
   const filtered = useMemo(() => {
     let rows = tickers;
@@ -108,6 +143,8 @@ export function TickerTable({ tickers }: TickerTableProps) {
     }
     return rows;
   }, [tickers, search, statusFilter]);
+
+  const columns = useMemo(() => buildColumns(setConfirmDelete), []);
 
   const table = useReactTable({
     data: filtered,
@@ -182,7 +219,7 @@ export function TickerTable({ tickers }: TickerTableProps) {
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="hover:bg-muted/30 cursor-pointer transition-colors"
+                  className="group hover:bg-muted/30 cursor-pointer transition-colors"
                   onClick={() => router.push(`/ticker/${row.original.id}`)}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -200,6 +237,25 @@ export function TickerTable({ tickers }: TickerTableProps) {
       <p className="text-xs text-muted-foreground">
         {filtered.length} of {tickers.length} tickers
       </p>
+
+      <Dialog open={!!confirmDelete} onOpenChange={(o) => { if (!o) setConfirmDelete(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete {confirmDelete?.symbol}?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will permanently delete <strong>{confirmDelete?.company_name}</strong> and all its writeups, earnings summaries, and attachments.
+          </p>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={() => setConfirmDelete(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
