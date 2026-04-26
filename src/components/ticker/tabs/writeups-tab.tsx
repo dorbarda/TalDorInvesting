@@ -6,10 +6,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
+import { MarkdownEditor } from "@/components/editor/markdown-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft, Plus, FileText } from "lucide-react";
 import type { Writeup } from "@/types/database";
@@ -21,17 +21,19 @@ export function WriteupsTab({ tickerId, initial }: { tickerId: string; initial: 
   const [writeups, setWriteups] = useState(initial);
   const [view, setView] = useState<View>("list");
   const [selected, setSelected] = useState<Writeup | null>(null);
-  const [form, setForm] = useState({ title: "", content: "" });
-  const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState(false);
 
   function openNew() {
-    setForm({ title: "", content: "" });
+    setTitle("");
+    setTitleError(false);
     setSelected(null);
     setView("write");
   }
 
   function openEdit(w: Writeup) {
-    setForm({ title: w.title, content: w.content_md });
+    setTitle(w.title);
+    setTitleError(false);
     setSelected(w);
     setView("write");
   }
@@ -41,30 +43,28 @@ export function WriteupsTab({ tickerId, initial }: { tickerId: string; initial: 
     setView("read");
   }
 
-  async function handleSave() {
-    if (!form.title.trim()) {
-      toast.error("Title is required");
-      return;
+  async function handleSave(content: string) {
+    if (!title.trim()) {
+      setTitleError(true);
+      throw new Error("Title required");
     }
-    setSaving(true);
+    setTitleError(false);
 
     const { data, error } = await supabase
       .from("writeups")
-      .insert({ ticker_id: tickerId, title: form.title, content_md: form.content })
+      .insert({ ticker_id: tickerId, title: title.trim(), content_md: content })
       .select()
       .single();
 
     if (error) {
       toast.error("Failed to save: " + error.message);
-      setSaving(false);
-      return;
+      throw error;
     }
 
     setWriteups((prev) => [data as Writeup, ...prev]);
     toast.success(`Saved as v${(data as Writeup).version}`);
     setView("list");
     router.refresh();
-    setSaving(false);
   }
 
   if (view === "read" && selected) {
@@ -74,16 +74,15 @@ export function WriteupsTab({ tickerId, initial }: { tickerId: string; initial: 
           <Button variant="ghost" size="sm" onClick={() => setView("list")}>
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
-          <span className="text-xs text-muted-foreground">v{selected.version} · {formatDate(selected.created_at)}</span>
+          <span className="text-xs text-muted-foreground">
+            v{selected.version} · {formatDate(selected.created_at)}
+          </span>
           <Button variant="outline" size="sm" className="ml-auto" onClick={() => openEdit(selected)}>
             Edit (new version)
           </Button>
         </div>
         <h2 className="text-lg font-semibold">{selected.title}</h2>
-        <div
-          className="prose prose-sm max-w-none dark:prose-invert"
-          dir="auto"
-        >
+        <div className="prose prose-sm max-w-none dark:prose-invert" dir="auto">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{selected.content_md}</ReactMarkdown>
         </div>
       </div>
@@ -91,43 +90,43 @@ export function WriteupsTab({ tickerId, initial }: { tickerId: string; initial: 
   }
 
   if (view === "write") {
+    const draftKey = selected
+      ? `draft-writeup-${tickerId}-from-${selected.id}`
+      : `draft-writeup-${tickerId}-new`;
+
     return (
-      <div className="flex flex-col gap-4 max-w-2xl">
+      <div className="flex flex-col gap-4 max-w-4xl">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setView("list")}>
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           <span className="text-sm text-muted-foreground">
-            {selected ? `Editing from v${selected.version} — saves as new version` : "New writeup"}
+            {selected
+              ? `Editing from v${selected.version} — saves as new version`
+              : "New writeup"}
           </span>
         </div>
+
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="title">Title</Label>
           <Input
             id="title"
             placeholder="Research notes, Q3 update…"
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); setTitleError(false); }}
+            className={titleError ? "border-destructive" : ""}
             autoFocus
           />
+          {titleError && <p className="text-xs text-destructive">Title is required</p>}
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="content">Content (Markdown)</Label>
-          <Textarea
-            id="content"
-            placeholder="Write your analysis here…"
-            value={form.content}
-            onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-            className="min-h-[400px] font-mono text-sm resize-y"
-            dir="auto"
-          />
-          <p className="text-xs text-muted-foreground">
-            The editor upgrades to split-view with toolbar in step 6.
-          </p>
-        </div>
-        <Button onClick={handleSave} disabled={saving} className="w-fit">
-          {saving ? "Saving…" : "Save"}
-        </Button>
+
+        <MarkdownEditor
+          initialContent={selected?.content_md ?? ""}
+          placeholder="Write your analysis here… (Hebrew supported)"
+          draftKey={draftKey}
+          onSave={handleSave}
+          saveLabel="Save writeup"
+        />
       </div>
     );
   }
