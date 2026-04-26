@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from datetime import date
+from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -61,8 +61,12 @@ def _split_earnings_dates(symbol: str) -> tuple[list[date], list[date]]:
             raw = [raw] if raw else []
 
         for item in raw:
-            d = item.date() if hasattr(item, "date") else None
-            if d is None:
+            # datetime.date has no .date() method; datetime/Timestamp does
+            if isinstance(item, datetime):
+                d = item.date()
+            elif isinstance(item, date):
+                d = item
+            else:
                 continue
             if d >= today:
                 future.append(d)
