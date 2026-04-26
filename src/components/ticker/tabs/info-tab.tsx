@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Ticker } from "@/types/database";
 
 function ScoreInput({ id, label, value, onChange }: {
@@ -34,6 +36,22 @@ function ScoreInput({ id, label, value, onChange }: {
 export function InfoTab({ ticker }: { ticker: Ticker }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function handleRefreshEarnings() {
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/earnings_refresh?symbol=${ticker.symbol}`, { method: "POST" });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      toast.success(data.refreshed > 0 ? "Earnings dates updated" : "No upcoming earnings found");
+      router.refresh();
+    } catch (e: unknown) {
+      toast.error("Refresh failed — earnings fetch only works in production");
+    } finally {
+      setRefreshing(false);
+    }
+  }
   const [form, setForm] = useState({
     company_name: ticker.company_name,
     status: ticker.status as TickerStatus,
@@ -111,26 +129,41 @@ export function InfoTab({ ticker }: { ticker: Ticker }) {
         <ScoreInput id="pillars" label="5 Pillars" value={form.five_pillars_score} onChange={(v) => set("five_pillars_score", v)} />
       </div>
 
-      <div className="flex gap-4 flex-wrap">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="last_earnings">Last earnings date</Label>
-          <Input
-            id="last_earnings"
-            type="date"
-            value={form.last_earnings_date}
-            onChange={(e) => set("last_earnings_date", e.target.value)}
-            className="w-44"
-          />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <Label>Earnings dates</Label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshEarnings}
+            disabled={refreshing}
+            className="h-7 text-xs"
+          >
+            <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
+            Fetch from yfinance
+          </Button>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="next_earnings">Next earnings date</Label>
-          <Input
-            id="next_earnings"
-            type="date"
-            value={form.next_earnings_date}
-            onChange={(e) => set("next_earnings_date", e.target.value)}
-            className="w-44"
-          />
+        <div className="flex gap-4 flex-wrap">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="last_earnings" className="text-muted-foreground font-normal">Last</Label>
+            <Input
+              id="last_earnings"
+              type="date"
+              value={form.last_earnings_date}
+              onChange={(e) => set("last_earnings_date", e.target.value)}
+              className="w-44"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="next_earnings" className="text-muted-foreground font-normal">Next</Label>
+            <Input
+              id="next_earnings"
+              type="date"
+              value={form.next_earnings_date}
+              onChange={(e) => set("next_earnings_date", e.target.value)}
+              className="w-44"
+            />
+          </div>
         </div>
       </div>
 
