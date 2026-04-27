@@ -11,7 +11,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Trash2, Search, ChevronRight } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, Trash2, Search, ChevronRight, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { type Ticker } from "@/types/database";
@@ -48,6 +48,18 @@ function buildColumns(onDelete: (t: Ticker) => void): ColumnDef<Ticker>[] {
       cell: ({ row }) => (
         <span className="text-[14px] max-w-[200px] truncate block">{row.original.company_name}</span>
       ),
+    },
+    {
+      accessorKey: "current_price",
+      header: "Current Price",
+      cell: ({ row }) => {
+        const price = row.original.current_price;
+        return price != null ? (
+          <span className="font-mono text-[13px] tabular-nums">${price.toFixed(2)}</span>
+        ) : (
+          <span className="font-mono text-[13px] text-muted-foreground">—</span>
+        );
+      },
     },
     {
       accessorKey: "status",
@@ -127,6 +139,7 @@ export function TickerTable({ tickers }: TickerTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingPrices, setRefreshingPrices] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Ticker | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -167,6 +180,20 @@ export function TickerTable({ tickers }: TickerTableProps) {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  async function handleRefreshPrices() {
+    setRefreshingPrices(true);
+    try {
+      const res = await fetch("/api/price_refresh", { method: "POST" });
+      const data = await res.json();
+      toast.success(`Updated prices for ${data.refreshed} tickers`);
+      router.refresh();
+    } catch {
+      toast.error("Failed to refresh prices");
+    } finally {
+      setRefreshingPrices(false);
+    }
+  }
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -218,6 +245,10 @@ export function TickerTable({ tickers }: TickerTableProps) {
           </div>
           {/* Actions */}
           <div className="ml-auto flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleRefreshPrices} disabled={refreshingPrices}>
+              <DollarSign className={cn("h-4 w-4", refreshingPrices && "animate-pulse")} />
+              Refresh prices
+            </Button>
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
               <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
               Refresh earnings
