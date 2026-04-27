@@ -11,7 +11,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { type Ticker } from "@/types/database";
 import { StatusBadge } from "@/components/ticker/status-badge";
@@ -43,6 +43,18 @@ const columns: ColumnDef<Ticker>[] = [
     cell: ({ row }) => (
       <span className="text-sm max-w-[200px] truncate block">{row.original.company_name}</span>
     ),
+  },
+  {
+    accessorKey: "current_price",
+    header: "Current Price",
+    cell: ({ row }) => {
+      const price = row.original.current_price;
+      return price != null ? (
+        <span className="text-sm font-mono tabular-nums">${price.toFixed(2)}</span>
+      ) : (
+        <span className="text-sm text-muted-foreground">—</span>
+      );
+    },
   },
   {
     accessorKey: "status",
@@ -96,6 +108,7 @@ export function TickerTable({ tickers }: TickerTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingPrices, setRefreshingPrices] = useState(false);
 
   const filtered = useMemo(() => {
     let rows = tickers;
@@ -118,6 +131,20 @@ export function TickerTable({ tickers }: TickerTableProps) {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  async function handleRefreshPrices() {
+    setRefreshingPrices(true);
+    try {
+      const res = await fetch("/api/price_refresh", { method: "POST" });
+      const data = await res.json();
+      toast.success(`Updated prices for ${data.refreshed} tickers`);
+      router.refresh();
+    } catch {
+      toast.error("Failed to refresh prices");
+    } finally {
+      setRefreshingPrices(false);
+    }
+  }
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -143,6 +170,10 @@ export function TickerTable({ tickers }: TickerTableProps) {
           onStatusChange={setStatusFilter}
         />
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefreshPrices} disabled={refreshingPrices}>
+            <DollarSign className={cn("h-4 w-4", refreshingPrices && "animate-pulse")} />
+            Refresh prices
+          </Button>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
             Refresh earnings

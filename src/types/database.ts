@@ -10,6 +10,8 @@ export interface Ticker {
   five_pillars_score: number | null;
   last_earnings_date: string | null;
   next_earnings_date: string | null;
+  current_price: number | null;
+  price_updated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +65,8 @@ type TickerUpdate = {
   five_pillars_score?: number | null;
   last_earnings_date?: string | null;
   next_earnings_date?: string | null;
+  current_price?: number | null;
+  price_updated_at?: string | null;
 };
 
 export type Database = {
