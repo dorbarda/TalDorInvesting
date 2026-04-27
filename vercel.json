@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/price_refresh",
-      "schedule": "0 13-21 * * 1-5"
+      "schedule": "0 20 * * 1-5"
     }
   ]
 }
