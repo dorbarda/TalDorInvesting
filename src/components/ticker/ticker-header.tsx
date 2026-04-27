@@ -1,53 +1,65 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/ticker/status-badge";
-import { ScoreBadge } from "@/components/ticker/score-badge";
 import { formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { Ticker } from "@/types/database";
 
-export function TickerHeader({ ticker }: { ticker: Ticker }) {
+function MetricChip({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+  highlight?: boolean;
+}) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className={cn(
+      "flex items-center gap-1.5 border rounded-lg px-3.5 py-1.5",
+      highlight ? "border-upcoming/50 bg-upcoming/10" : "border-border"
+    )}>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn(
+        "font-mono text-[13px] font-medium",
+        highlight ? "text-upcoming" : value != null ? "text-foreground" : "text-muted-foreground"
+      )}>
+        {value ?? "—"}
+      </span>
+    </div>
+  );
+}
+
+export function TickerHeader({ ticker }: { ticker: Ticker }) {
+  const nextSoon = ticker.next_earnings_date &&
+    new Date(ticker.next_earnings_date) <= new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+  return (
+    <div className="px-10 pt-7 pb-0">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+        className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-4"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Dashboard
       </Link>
 
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold font-mono">{ticker.symbol}</h1>
-            <StatusBadge status={ticker.status} />
-          </div>
-          <p className="text-muted-foreground mt-0.5">{ticker.company_name}</p>
-        </div>
+      <div className="flex items-center gap-2.5 mb-1">
+        <h1 className="font-mono text-[28px] font-semibold tracking-tight">{ticker.symbol}</h1>
+        <StatusBadge status={ticker.status} />
       </div>
+      <p className="text-[14px] text-muted-foreground mb-5">{ticker.company_name}</p>
 
-      <div className="flex items-center gap-6 text-sm border rounded-lg px-4 py-3 bg-muted/30 w-fit">
-        <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground">Confidence</span>
-          <ScoreBadge score={ticker.confidence_score} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground">Price</span>
-          <ScoreBadge score={ticker.price_score} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground">5 Pillars</span>
-          <ScoreBadge score={ticker.five_pillars_score} />
-        </div>
-        <div className="w-px h-4 bg-border" />
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <span>Last:</span>
-          <span className="text-foreground">{formatDate(ticker.last_earnings_date)}</span>
-        </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <span>Next:</span>
-          <span className="text-foreground">{formatDate(ticker.next_earnings_date)}</span>
-        </div>
+      <div className="flex items-center gap-2 flex-wrap mb-5">
+        <MetricChip label="Confidence" value={ticker.confidence_score} />
+        <MetricChip label="Price" value={ticker.price_score} />
+        <MetricChip label="5 Pillars" value={ticker.five_pillars_score} />
+        <MetricChip label="Last" value={formatDate(ticker.last_earnings_date)} />
+        <MetricChip
+          label="Next"
+          value={formatDate(ticker.next_earnings_date)}
+          highlight={!!nextSoon}
+        />
       </div>
     </div>
   );

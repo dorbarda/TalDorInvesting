@@ -13,21 +13,11 @@ export default async function CalendarPage() {
 
   if (error) {
     return (
-      <div className="text-destructive text-sm">
+      <div className="text-destructive text-sm p-10">
         Failed to load tickers: {error.message}
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold">Earnings Calendar</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Click any event to open the ticker. Use the dashboard to refresh earnings dates.
-        </p>
-      </div>
-      <EarningsCalendar tickers={(data ?? []) as Ticker[]} />
-    </div>
-  );
+  return <EarningsCalendar tickers={(data ?? []) as Ticker[]} />;
 }

@@ -89,3 +89,15 @@ create index on tickers (next_earnings_date);
 create index on writeups (ticker_id, version desc);
 create index on earnings_summaries (ticker_id, earnings_date desc);
 create index on attachments (ticker_id);
+
+-- ─── Grants (required for PostgREST schema cache) ──────────────────────────
+grant usage on schema public to anon, authenticated;
+
+grant select, insert, update, delete
+  on table public.tickers             to anon, authenticated;
+grant select, insert, update, delete
+  on table public.writeups            to anon, authenticated;
+grant select, insert, update, delete
+  on table public.earnings_summaries  to anon, authenticated;
+grant select, insert, update, delete
+  on table public.attachments         to anon, authenticated;
