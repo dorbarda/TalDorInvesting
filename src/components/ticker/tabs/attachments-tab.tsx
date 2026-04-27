@@ -74,7 +74,14 @@ export function AttachmentsTab({ tickerId, initial }: { tickerId: string; initia
     // Silently try to create bucket in case it doesn't exist yet
     await supabase.storage.createBucket(BUCKET, { public: false }).catch(() => null);
 
-    const storagePath = `${tickerId}/${Date.now()}_${file.name}`;
+    const ext = file.name.includes(".") ? file.name.split(".").pop()! : "";
+    const safeName = file.name
+      .replace(/[^\x00-\x7F]/g, "")   // strip non-ASCII (Hebrew, etc.)
+      .replace(/[^a-zA-Z0-9._-]/g, "_") // replace remaining special chars
+      .replace(/_+/g, "_")
+      .replace(/^_|_$/g, "")
+      || `file${ext ? "." + ext : ""}`;
+    const storagePath = `${tickerId}/${Date.now()}_${safeName}`;
 
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file);
 
