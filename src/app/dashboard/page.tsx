@@ -14,19 +14,11 @@ export default async function DashboardPage() {
 
   if (error) {
     return (
-      <div className="text-destructive text-sm">
+      <div className="text-destructive text-sm p-10">
         Failed to load tickers: {error.message}
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">All investment ideas and holdings</p>
-      </div>
-      <TickerTable tickers={data ?? []} />
-    </div>
-  );
+  return <TickerTable tickers={data ?? []} />;
 }
