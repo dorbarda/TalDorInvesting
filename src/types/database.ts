@@ -42,6 +42,43 @@ export interface EarningsSummary {
   created_at: string;
 }
 
+export interface InvestmentScorecard {
+  id: string;
+  ticker_id: string;
+  // Pillar 1: Management Quality (max 15)
+  p1_capital_allocation: number;
+  p1_insider_ownership: number;
+  p1_investor_relations: number;
+  p1_founder_involvement: number;
+  p1_ceo_quality: number;
+  p1_notes: string;
+  // Pillar 2: Business Quality (max 12)
+  p2_competitive_moat: number;
+  p2_pricing_power: number;
+  p2_reinvestment_runway: number;
+  p2_balance_sheet: number;
+  p2_notes: string;
+  // Pillar 3: Growing Business Fundamentals (max 12)
+  p3_roic_trend: number;
+  p3_margin_expansion: number;
+  p3_visible_catalysts: number;
+  p3_under_followed: number;
+  p3_notes: string;
+  // Pillar 4: Valuation (max 12)
+  p4_absolute_valuation: number;
+  p4_relative_valuation: number;
+  p4_downside_protection: number;
+  p4_risk_reward: number;
+  p4_notes: string;
+  // Pillar 5: Business Simplicity (max 9)
+  p5_accounting_clarity: number;
+  p5_capital_structure: number;
+  p5_debt_structure: number;
+  p5_notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
 type TickerInsert = {
   id?: string;
   symbol: string;
@@ -114,6 +151,12 @@ export type Database = {
           created_at?: string;
         };
         Update: { content_md?: string };
+        Relationships: [];
+      };
+      investment_scorecards: {
+        Row: InvestmentScorecard;
+        Insert: Omit<InvestmentScorecard, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<InvestmentScorecard, "id" | "ticker_id" | "created_at">>;
         Relationships: [];
       };
     };

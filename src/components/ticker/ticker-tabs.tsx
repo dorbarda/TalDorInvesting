@@ -6,12 +6,14 @@ import { WriteupsTab } from "@/components/ticker/tabs/writeups-tab";
 import { EarningsTab } from "@/components/ticker/tabs/earnings-tab";
 import { AttachmentsTab } from "@/components/ticker/tabs/attachments-tab";
 import { InfoTab } from "@/components/ticker/tabs/info-tab";
-import type { Ticker, Writeup, EarningsSummary, Attachment } from "@/types/database";
+import { ScorecardTab } from "@/components/ticker/tabs/scorecard-tab";
+import type { Ticker, Writeup, EarningsSummary, Attachment, InvestmentScorecard } from "@/types/database";
 
 const TABS = [
   { id: "writeups", label: "Writeups" },
   { id: "earnings", label: "Earnings Summaries" },
   { id: "attachments", label: "Attachments" },
+  { id: "scorecard", label: "Scorecard" },
   { id: "info", label: "Info" },
 ];
 
@@ -20,9 +22,10 @@ interface Props {
   writeups: Writeup[];
   earnings: EarningsSummary[];
   attachments: Attachment[];
+  scorecard: InvestmentScorecard | null;
 }
 
-export function TickerTabs({ ticker, writeups, earnings, attachments }: Props) {
+export function TickerTabs({ ticker, writeups, earnings, attachments, scorecard }: Props) {
   const [active, setActive] = useState("writeups");
 
   return (
@@ -32,6 +35,7 @@ export function TickerTabs({ ticker, writeups, earnings, attachments }: Props) {
         {active === "writeups" && <WriteupsTab tickerId={ticker.id} initial={writeups} />}
         {active === "earnings" && <EarningsTab tickerId={ticker.id} initial={earnings} />}
         {active === "attachments" && <AttachmentsTab tickerId={ticker.id} initial={attachments} />}
+        {active === "scorecard" && <ScorecardTab tickerId={ticker.id} initial={scorecard} />}
         {active === "info" && <InfoTab ticker={ticker} />}
       </div>
     </div>
