@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Calendar, Globe, TrendingUp } from "lucide-react";
+import { BarChart2, Calendar, Globe, KanbanSquare, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart2 },
+  { href: "/task-board", label: "Task Board", icon: KanbanSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/market-overview", label: "Market Overview", icon: Globe },
 ];
