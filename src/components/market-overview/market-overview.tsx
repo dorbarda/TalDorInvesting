@@ -52,13 +52,13 @@ interface MarketData {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function sectorBg(change: number | null): string {
-  if (change === null) return "oklch(60% 0.01 0)";
-  if (change >  1.5)  return "oklch(36% 0.19 145)";
-  if (change >  0.5)  return "oklch(42% 0.15 145)";
-  if (change >  0)    return "oklch(48% 0.10 145)";
-  if (change > -0.5)  return "oklch(48% 0.10 25)";
-  if (change > -1)    return "oklch(42% 0.15 25)";
-  return "oklch(36% 0.19 25)";
+  if (change === null) return "oklch(55% 0.01 0)";
+  if (change >  2)    return "oklch(32% 0.20 145)";
+  if (change >  1)    return "oklch(38% 0.17 145)";
+  if (change >  0)    return "oklch(44% 0.13 145)";
+  if (change > -1)    return "oklch(44% 0.13 25)";
+  if (change > -2)    return "oklch(38% 0.17 25)";
+  return "oklch(32% 0.20 25)";
 }
 
 function ChangeTag({
@@ -139,10 +139,6 @@ export function MarketOverview() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  const maxAbs = data
-    ? Math.max(...data.sectors.map((s) => Math.abs(s.change_1w ?? 0)), 0.1)
-    : 1;
 
   const totalSectors =
     (data?.breadth.sectorsUp ?? 0) + (data?.breadth.sectorsDown ?? 0);
@@ -256,31 +252,22 @@ export function MarketOverview() {
                     .sort(
                       (a, b) => (b.change_1w ?? -999) - (a.change_1w ?? -999)
                     )
-                    .map((s) => {
-                      const intensity =
-                        0.72 +
-                        (Math.abs(s.change_1w ?? 0) / maxAbs) * 0.28;
-                      return (
-                        <div
-                          key={s.name}
-                          className="rounded-lg p-3.5"
-                          style={{
-                            background: sectorBg(s.change_1w),
-                            transform: `scale(${intensity})`,
-                            transformOrigin: "center",
-                          }}
-                        >
-                          <div className="text-[11px] font-semibold mb-1.5 text-white/70">
-                            {s.name}
-                          </div>
-                          <div className="font-mono text-[17px] font-semibold text-white">
-                            {s.change_1w !== null
-                              ? `${s.change_1w >= 0 ? "+" : ""}${s.change_1w.toFixed(2)}%`
-                              : "—"}
-                          </div>
+                    .map((s) => (
+                      <div
+                        key={s.name}
+                        className="rounded-lg px-4 py-3.5 flex flex-col justify-between min-h-[82px]"
+                        style={{ background: sectorBg(s.change_1w) }}
+                      >
+                        <div className="text-[11px] font-medium text-white/80 leading-tight">
+                          {s.name}
                         </div>
-                      );
-                    })}
+                        <div className="font-mono text-[19px] font-bold text-white mt-2 tracking-tight">
+                          {s.change_1w !== null
+                            ? `${s.change_1w >= 0 ? "+" : ""}${s.change_1w.toFixed(2)}%`
+                            : "—"}
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
 

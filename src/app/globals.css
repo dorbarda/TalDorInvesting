@@ -4,34 +4,34 @@
 
 @layer base {
   :root {
-    /* Warm Minimal — #F8F7F4 bg, #1A1714 text, indigo accent */
-    --background: 37 20% 97%;
-    --foreground: 24 14% 10%;
+    /* Cool Slate — #F0F4F8 bg, #1C2B4A text, blue accent */
+    --background: 210 29% 96%;
+    --foreground: 222 45% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 24 14% 10%;
+    --card-foreground: 222 45% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 24 14% 10%;
-    --primary: 232 45% 42%;
+    --popover-foreground: 222 45% 20%;
+    --primary: 214 68% 48%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 37 18% 94%;
-    --secondary-foreground: 24 14% 10%;
-    --muted: 37 18% 94%;
-    --muted-foreground: 25 8% 47%;
-    --accent: 232 45% 42%;
-    --accent-foreground: 0 0% 100%;
+    --secondary: 214 30% 92%;
+    --secondary-foreground: 222 45% 20%;
+    --muted: 214 30% 92%;
+    --muted-foreground: 214 24% 52%;
+    --accent: 214 30% 92%;
+    --accent-foreground: 222 45% 20%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 37 14% 87%;
-    --input: 37 14% 87%;
-    --ring: 232 45% 42%;
+    --border: 214 44% 88%;
+    --input: 214 44% 88%;
+    --ring: 214 68% 48%;
     --radius: 0.5rem;
 
-    /* Sidebar — #EFECE5 warm gray */
-    --sidebar: 40 16% 91%;
-    --sidebar-foreground: 24 14% 10%;
-    --sidebar-muted: 25 8% 57%;
+    /* Sidebar — #1C2B4A dark navy */
+    --sidebar: 222 45% 20%;
+    --sidebar-foreground: 214 47% 94%;
+    --sidebar-muted: 214 27% 59%;
 
-    /* Upcoming earnings badge — warm amber */
+    /* Upcoming earnings badge — amber */
     --upcoming: 38 85% 44%;
     --upcoming-bg: 38 80% 93%;
 
