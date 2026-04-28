@@ -57,7 +57,6 @@ export function InfoTab({ ticker }: { ticker: Ticker }) {
     status: ticker.status as TickerStatus,
     confidence_score: ticker.confidence_score?.toString() ?? "",
     price_score: ticker.price_score?.toString() ?? "",
-    five_pillars_score: ticker.five_pillars_score?.toString() ?? "",
     last_earnings_date: ticker.last_earnings_date ?? "",
     next_earnings_date: ticker.next_earnings_date ?? "",
   });
@@ -78,7 +77,6 @@ export function InfoTab({ ticker }: { ticker: Ticker }) {
         status: form.status,
         confidence_score: parseScore(form.confidence_score),
         price_score: parseScore(form.price_score),
-        five_pillars_score: parseScore(form.five_pillars_score),
         last_earnings_date: form.last_earnings_date || null,
         next_earnings_date: form.next_earnings_date || null,
       })
@@ -126,7 +124,6 @@ export function InfoTab({ ticker }: { ticker: Ticker }) {
       <div className="flex gap-4 flex-wrap">
         <ScoreInput id="confidence" label="Confidence" value={form.confidence_score} onChange={(v) => set("confidence_score", v)} />
         <ScoreInput id="price" label="Price" value={form.price_score} onChange={(v) => set("price_score", v)} />
-        <ScoreInput id="pillars" label="5 Pillars" value={form.five_pillars_score} onChange={(v) => set("five_pillars_score", v)} />
       </div>
 
       <div className="flex flex-col gap-2">

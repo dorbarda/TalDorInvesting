@@ -33,7 +33,13 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
 
 const FILTER_OPTIONS = ["all", ...TICKER_STATUSES] as const;
 
-function buildColumns(onDelete: (t: Ticker) => void): ColumnDef<Ticker>[] {
+function ScorecardCell({ total }: { total: number | undefined }) {
+  if (total == null) return <span className="text-muted-foreground text-sm">—</span>;
+  const color = total >= 40 ? "text-emerald-600 font-semibold" : total >= 24 ? "text-amber-600 font-medium" : "text-red-500 font-medium";
+  return <span className={cn("text-sm tabular-nums font-mono", color)}>{total}<span className="text-muted-foreground font-normal text-xs">/60</span></span>;
+}
+
+function buildColumns(onDelete: (t: Ticker) => void, scorecardTotals: Record<string, number>): ColumnDef<Ticker>[] {
   return [
     {
       accessorKey: "symbol",
@@ -77,9 +83,9 @@ function buildColumns(onDelete: (t: Ticker) => void): ColumnDef<Ticker>[] {
       cell: ({ row }) => <ScoreBadge score={row.original.price_score} />,
     },
     {
-      accessorKey: "five_pillars_score",
-      header: "5 Pillars",
-      cell: ({ row }) => <ScoreBadge score={row.original.five_pillars_score} />,
+      id: "scorecard",
+      header: "Scorecard",
+      cell: ({ row }) => <ScorecardCell total={scorecardTotals[row.original.id]} />,
     },
     {
       accessorKey: "last_earnings_date",
@@ -131,9 +137,10 @@ function buildColumns(onDelete: (t: Ticker) => void): ColumnDef<Ticker>[] {
 
 interface TickerTableProps {
   tickers: Ticker[];
+  scorecardTotals: Record<string, number>;
 }
 
-export function TickerTable({ tickers }: TickerTableProps) {
+export function TickerTable({ tickers, scorecardTotals }: TickerTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
@@ -169,7 +176,7 @@ export function TickerTable({ tickers }: TickerTableProps) {
     return rows;
   }, [tickers, search, statusFilter]);
 
-  const columns = useMemo(() => buildColumns(setConfirmDelete), []);
+  const columns = useMemo(() => buildColumns(setConfirmDelete, scorecardTotals), [scorecardTotals]);
 
   const table = useReactTable({
     data: filtered,
