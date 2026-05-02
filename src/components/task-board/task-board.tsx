@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { differenceInDays, parseISO } from "date-fns";
 import { BookOpen, Zap, FileText } from "lucide-react";
 import type { Ticker } from "@/types/database";
@@ -23,7 +23,17 @@ interface TaskBoardProps {
   summaryKeys: string[];
 }
 
+const COLUMNS = [
+  { id: "thesis", title: "Write Main Thesis", icon: BookOpen, emptyMessage: "No tickers to track." },
+  { id: "prepForEarnings", title: "Prepare for Earnings", icon: Zap, emptyMessage: "No earnings in the next 7 days." },
+  { id: "summarizeEarnings", title: "Summarize Earnings", icon: FileText, emptyMessage: "No past earnings to summarize." },
+] as const;
+
+type ColumnId = typeof COLUMNS[number]["id"];
+
 export function TaskBoard({ tickers, writeupCounts, summaryKeys }: TaskBoardProps) {
+  const [activeTab, setActiveTab] = useState<ColumnId>("thesis");
+
   const summaryKeySet = useMemo(() => new Set(summaryKeys), [summaryKeys]);
 
   const tasks = useMemo<TickerTaskData[]>(() => {
@@ -79,30 +89,36 @@ export function TaskBoard({ tickers, writeupCounts, summaryKeys }: TaskBoardProp
   const prepTasks = tasks.filter((t: TickerTaskData) => t.prepForEarnings !== "na");
   const summarizeTasks = tasks.filter((t: TickerTaskData) => t.summarizeEarnings !== "na");
 
+  const columnTasks: Record<ColumnId, TickerTaskData[]> = {
+    thesis: thesisTasks,
+    prepForEarnings: prepTasks,
+    summarizeEarnings: summarizeTasks,
+  };
+
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="bg-card border-b border-border px-10 pt-8 pb-6 shrink-0">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-10 pt-5 sm:pt-8 pb-4 sm:pb-6 shrink-0">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-[22px] font-semibold tracking-tight text-foreground">
+            <h1 className="text-[18px] sm:text-[22px] font-semibold tracking-tight text-foreground">
               Task Board
             </h1>
-            <p className="text-[13px] text-muted-foreground mt-1">
+            <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-1">
               Tasks auto-complete when content is added to a ticker.
             </p>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[24px] font-semibold tabular-nums leading-none">
+            <div className="text-[20px] sm:text-[24px] font-semibold tabular-nums leading-none">
               {stats.done}
-              <span className="text-muted-foreground text-[15px] font-normal">
+              <span className="text-muted-foreground text-[13px] sm:text-[15px] font-normal">
                 {" "}/ {stats.total}
               </span>
             </div>
-            <div className="text-[12px] text-muted-foreground mt-0.5">tasks complete</div>
-            <div className="mt-2 w-[140px] h-1.5 bg-muted rounded-full overflow-hidden ml-auto">
+            <div className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5">tasks complete</div>
+            <div className="mt-2 w-[100px] sm:w-[140px] h-1.5 bg-muted rounded-full overflow-hidden ml-auto">
               <div
                 className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                 style={{ width: `${pct}%` }}
@@ -110,10 +126,31 @@ export function TaskBoard({ tickers, writeupCounts, summaryKeys }: TaskBoardProp
             </div>
           </div>
         </div>
+
+        {/* Mobile tabs */}
+        <div className="flex lg:hidden mt-4 gap-1 border-b border-border -mx-4 sm:-mx-6 px-4 sm:px-6">
+          {COLUMNS.map(({ id, title, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ${
+                activeTab === id
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">{title}</span>
+              <span className="sm:hidden">
+                {id === "thesis" ? "Thesis" : id === "prepForEarnings" ? "Earnings" : "Summary"}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Board columns */}
-      <div className="flex-1 overflow-hidden flex">
+      {/* Desktop: 3 columns */}
+      <div className="hidden lg:flex flex-1 overflow-hidden">
         <TaskColumn
           title="Write Main Thesis"
           icon={BookOpen}
@@ -135,6 +172,22 @@ export function TaskBoard({ tickers, writeupCounts, summaryKeys }: TaskBoardProp
           taskKey="summarizeEarnings"
           emptyMessage="No past earnings to summarize."
         />
+      </div>
+
+      {/* Mobile/tablet: single active column */}
+      <div className="flex lg:hidden flex-1 overflow-hidden">
+        {COLUMNS.map(({ id, title, icon, emptyMessage }) =>
+          activeTab === id ? (
+            <TaskColumn
+              key={id}
+              title={title}
+              icon={icon}
+              tasks={columnTasks[id]}
+              taskKey={id}
+              emptyMessage={emptyMessage}
+            />
+          ) : null
+        )}
       </div>
     </div>
   );
