@@ -42,6 +42,55 @@ export interface EarningsSummary {
   created_at: string;
 }
 
+export type KpiDirection = "higher_better" | "lower_better" | "neutral";
+
+export interface Kpi {
+  id: string;
+  ticker_id: string;
+  name: string;
+  reason: string;
+  target: string;
+  unit: string;
+  direction: KpiDirection;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KpiObservation {
+  id: string;
+  kpi_id: string;
+  fiscal_period: string;
+  period_sort: string;
+  value: number | null;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ValuationMultipleType =
+  | "pe"
+  | "ev_ebitda"
+  | "ev_ebit"
+  | "ps"
+  | "ev_sales"
+  | "p_fcf"
+  | "pb"
+  | "other";
+
+export interface ValuationMethod {
+  id: string;
+  ticker_id: string;
+  multiple_type: ValuationMultipleType;
+  multiple_type_other: string;
+  entry_multiple: number | null;
+  entry_rationale: string;
+  exit_multiple: number | null;
+  exit_rationale: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface InvestmentScorecard {
   id: string;
   ticker_id: string;
@@ -157,6 +206,24 @@ export type Database = {
         Row: InvestmentScorecard;
         Insert: Omit<InvestmentScorecard, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Omit<InvestmentScorecard, "id" | "ticker_id" | "created_at">>;
+        Relationships: [];
+      };
+      kpis: {
+        Row: Kpi;
+        Insert: Omit<Kpi, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<Kpi, "id" | "ticker_id" | "created_at">>;
+        Relationships: [];
+      };
+      kpi_observations: {
+        Row: KpiObservation;
+        Insert: Omit<KpiObservation, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<KpiObservation, "id" | "kpi_id" | "created_at">>;
+        Relationships: [];
+      };
+      valuation_methods: {
+        Row: ValuationMethod;
+        Insert: Omit<ValuationMethod, "id" | "created_at" | "updated_at"> & { id?: string; created_at?: string; updated_at?: string };
+        Update: Partial<Omit<ValuationMethod, "id" | "ticker_id" | "created_at">>;
         Relationships: [];
       };
     };
